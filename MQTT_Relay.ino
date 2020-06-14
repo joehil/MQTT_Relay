@@ -1,5 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include "WebOTA.h"
 
 // Update these with values suitable for your network.
 
@@ -20,7 +21,7 @@ int status1 = 2;
 int status2 = 2;
 
 void setup_wifi() {
-
+  int loopcnt = 0;
   delay(10);
   // We start by connecting to a WiFi network
   Serial.println();
@@ -32,6 +33,10 @@ void setup_wifi() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    loopcnt++;
+    if (loopcnt > 20){
+      ESP.restart();
+    }
   }
 
   Serial.println("");
@@ -151,11 +156,13 @@ char* TSystemUptime() {
 
 void reconnect() {
   // Loop until we're reconnected
+  int loopcnt = 0;
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Create a random client ID
     // Attempt to connect
     if (client.connect(clientId)) {
+      loopcnt = 0;
       Serial.println("connected");
       // Once connected, publish an announcement...
       strcpy(msg,clientId);
@@ -174,6 +181,13 @@ void reconnect() {
       Serial.println(" try again in 5 seconds");
       // Wait 5 seconds before retrying
       delay(5000);
+      loopcnt++;
+      if (loopcnt > 10){
+        if (WiFi.status() != WL_CONNECTED) {
+          setup_wifi();
+          loopcnt = 0;
+        }
+      }
     }
   }
 }
@@ -190,11 +204,13 @@ void setup() {
 }
 
 void loop() {
+  char buf [2];
 
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
+  webota.handle();
 
   long now = millis();
   if (now - lastMsg > 300000) {
@@ -204,6 +220,14 @@ void loop() {
     lastMsg = now;
     Serial.print("Publish message: ");
     Serial.println(TSystemUptime());
+    strcpy(msg,clientId);
+    strcat(msg,"/outTopic/status1");
+    sprintf (buf, "%i", status1);
+    client.publish(msg, buf);
+    strcpy(msg,clientId);
+    strcat(msg,"/outTopic/status2");
+    sprintf (buf, "%i", status2);
+    client.publish(msg, buf);
     strcpy(msg,clientId);
     strcat(msg,"/outTopic/uptime");
     client.publish(msg, TSystemUptime());
