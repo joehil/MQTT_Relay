@@ -19,6 +19,11 @@ char timestring[50];
 char msg[50];
 int status1 = 2;
 int status2 = 2;
+int oldstatus1 = 0;
+int oldstatus2 = 0;
+unsigned int cnt = 0;
+unsigned int cmdcnt = 0;
+unsigned int oldcmdcnt = 0;
 
 void setup_wifi() {
   int loopcnt = 0;
@@ -49,6 +54,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
+  char buf [5];
+
+  cmdcnt++;
   if (payload[0] == '1') {
     Serial.println("Action triggered 1");
     digitalWrite(relay_pin1, LOW);
@@ -143,6 +151,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
     digitalWrite(relay_pin2, HIGH);
     status2 = 2;
   }
+  if (status1 != oldstatus1){
+    strcpy(msg,clientId);
+    strcat(msg,"/outTopic/status1");
+    sprintf (buf, "%i", status1);
+    client.publish(msg, buf);
+    oldstatus1 = status1;
+  }
+  if (status2 != oldstatus2){
+    strcpy(msg,clientId);
+    strcat(msg,"/outTopic/status2");
+    sprintf (buf, "%i", status2);
+    client.publish(msg, buf);
+    oldstatus2 = status2;
+  }
+  strcpy(msg,clientId);
+  strcat(msg,"/outTopic/cmdcount");
+  sprintf (buf, "%i", cmdcnt);
+  client.publish(msg, buf);
 }
 
 char* TSystemUptime() {
@@ -204,7 +230,7 @@ void setup() {
 }
 
 void loop() {
-  char buf [2];
+  char buf [5];
 
   if (!client.connected()) {
     reconnect();
@@ -221,12 +247,9 @@ void loop() {
     Serial.print("Publish message: ");
     Serial.println(TSystemUptime());
     strcpy(msg,clientId);
-    strcat(msg,"/outTopic/status1");
-    sprintf (buf, "%i", status1);
-    client.publish(msg, buf);
-    strcpy(msg,clientId);
-    strcat(msg,"/outTopic/status2");
-    sprintf (buf, "%i", status2);
+    strcat(msg,"/outTopic/count");
+    cnt++;
+    sprintf (buf, "%i", cnt);
     client.publish(msg, buf);
     strcpy(msg,clientId);
     strcat(msg,"/outTopic/uptime");
