@@ -33,6 +33,8 @@ void setup_wifi() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
+  WiFi.setAutoReconnect(false);
+  WiFi.onEvent(eventWiFi); 
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -48,6 +50,49 @@ void setup_wifi() {
   Serial.println("WiFi connected");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+}
+
+/********************************************************
+/*  Handle WiFi events                                  *
+/********************************************************/
+void eventWiFi(WiFiEvent_t event) {
+     
+  switch(event) {
+    case WIFI_EVENT_STAMODE_CONNECTED:
+      Serial.println("EV1");
+    break;
+    
+    case WIFI_EVENT_STAMODE_DISCONNECTED:
+      Serial.println("EV2");
+      ESP.restart();
+    break;
+    
+     case WIFI_EVENT_STAMODE_AUTHMODE_CHANGE:
+      Serial.println("EV3");
+    break;
+    
+    case WIFI_EVENT_STAMODE_GOT_IP:
+      Serial.println("EV4");
+    break;
+    
+    case WIFI_EVENT_STAMODE_DHCP_TIMEOUT:
+      Serial.println("EV5");
+      ESP.restart();
+    break;
+    
+    case WIFI_EVENT_SOFTAPMODE_STACONNECTED:
+      Serial.println("EV6");
+    break;
+    
+    case WIFI_EVENT_SOFTAPMODE_STADISCONNECTED:
+      Serial.println("EV7");
+      ESP.restart();
+    break;
+    
+    case WIFI_EVENT_SOFTAPMODE_PROBEREQRECVED:
+      Serial.println("EV8");
+    break;
+  }
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -208,10 +253,9 @@ void reconnect() {
       // Wait 5 seconds before retrying
       delay(5000);
       loopcnt++;
-      if (loopcnt > 10){
+      if (loopcnt > 20){
         if (WiFi.status() != WL_CONNECTED) {
-          setup_wifi();
-          loopcnt = 0;
+          ESP.restart();
         }
       }
     }
