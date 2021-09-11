@@ -24,10 +24,11 @@ int oldstatus2 = 0;
 unsigned int cnt = 0;
 unsigned int cmdcnt = 0;
 unsigned int oldcmdcnt = 0;
+int ev2cnt = 0;
 
 void setup_wifi() {
   int loopcnt = 0;
-  delay(10);
+  delay(20000);
   // We start by connecting to a WiFi network
   Serial.println();
   Serial.print("Connecting to ");
@@ -35,6 +36,7 @@ void setup_wifi() {
 
   WiFi.setAutoReconnect(false);
   WiFi.onEvent(eventWiFi); 
+  WiFi.hostname("Relay02");
   WiFi.begin(ssid, password);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -64,10 +66,13 @@ void eventWiFi(WiFiEvent_t event) {
     
     case WIFI_EVENT_STAMODE_DISCONNECTED:
       Serial.println("EV2");
-      ESP.restart();
+      WiFi.reconnect();
+      ev2cnt++;
+      if (ev2cnt > 20) 
+         ESP.restart();
     break;
     
-     case WIFI_EVENT_STAMODE_AUTHMODE_CHANGE:
+    case WIFI_EVENT_STAMODE_AUTHMODE_CHANGE:
       Serial.println("EV3");
     break;
     
